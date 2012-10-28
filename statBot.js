@@ -3,8 +3,10 @@
 		,bot 		= null
 		,_ 			= require('underscore')._
 		,config		= { }
+		,stats		= { }
+		,publicCommands = ['!top10', '!top']
 
-		
+	 	
 var 
 cli_admin = function(command, args, nick){
 	/** 
@@ -72,10 +74,36 @@ cli_admin = function(command, args, nick){
 	bot.say(nick, '* part {channel}')
 	bot.say(nick, '.')
 }
-		
+,cli_publicCommand = function(nick, channel, text, msg){
+	switch (text.split(' ')[0]) {
+		case '!top10':
+		case '!top':
+			var  message = []
+				,user
+				,userStats
+			
+			//	sort data
+			userStats = _.sortBy(stats[channel], function(userData){
+				return -userData.words
+			})
+			//	prepare message
+			message.push(' <<<< Top 10 (words) >>> ')
+			for (userPrefix in userStats) {
+				user = userStats[userPrefix]
+				message.push(' '+user.nick+': '+user.words)
+			}
+			//	display stats on channel
+			bot.say(channel, message.join(' '))
+			break
+		default :
+			break
+	}
+}
+	
 exports.init = function(_config, _bot){
 	config = _config
 	bot = _bot
+	//	load stats from db (todo)
 }
 exports.processCommand = function(nick, text, msg){
 	isAllowed = _.find(config.admins, function(adminData, admin){
@@ -109,6 +137,31 @@ exports.processCommand = function(nick, text, msg){
 			bot.say(nick, 'try again :)')
 			break
 	}
+}
+exports.processMessage = function(nick, channel, text, msg){
+	if ( !stats[channel] ) {
+		stats[channel] = { }
+	}
+	if ( !stats[channel][msg.prefix] ) {
+		stats[channel][msg.prefix] = {
+			 words			: 0
+			,wordsPerLine	: 0
+			,smileys		: 0
+			,nick			: nick
+		}
+	}
+	var	 words = text.split(' ')
+		,user = stats[channel][msg.prefix]
+	
+	if ( _.indexOf( publicCommands, words[0] ) !== -1 ) {
+		cli_publicCommand(nick, channel, text, msg)
+		return
+	}
+
+	user.words += words.length
+	user.wordsPerLine = (user.wordsPerLine+words.length)/2
+	
+	
 }
 
 

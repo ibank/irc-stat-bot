@@ -7,7 +7,7 @@ var config = {
 	,admins		: {
 		'fou!fou@q17.pl' : {}
 	}
-}
+} 
 
 
 // Get the lib
@@ -34,6 +34,7 @@ bot.addListener("message#", function(nick, to, text, message) {
 	// console.log('MESSAGE >>> '+nick+' , to: '+to)
 	// console.log(text)
 	// console.log(message)
+	statBot.processMessage(nick, to, text, message) 
 })
 
 bot.addListener("pm", function(nick, text, msg){
