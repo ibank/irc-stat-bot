@@ -7,6 +7,8 @@ var config = {
 	,admins		: {
 		'fou!fou@q17.pl' : {}
 	}
+	
+	,collectUrls : true
 } 
 
 

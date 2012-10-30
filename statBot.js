@@ -5,6 +5,7 @@
 		,config		= { }
 		,stats		= { }
 		,publicCommands = ['!top10', '!top']
+		,fs 		= require('fs')
 
 	 	
 var 
@@ -81,6 +82,7 @@ cli_admin = function(command, args, nick){
 			var  message = []
 				,user
 				,userStats
+				,position = 1
 			
 			//	sort data
 			userStats = _.sortBy(stats[channel], function(userData){
@@ -90,7 +92,10 @@ cli_admin = function(command, args, nick){
 			message.push(' <<<< Top 10 (words) >>> ')
 			for (userPrefix in userStats) {
 				user = userStats[userPrefix]
+				message.push(' '+position+'#')
 				message.push(' '+user.nick+': '+user.words)
+				if ( position === 10 ) break
+				position++
 			}
 			//	display stats on channel
 			bot.say(channel, message.join(' '))
@@ -150,17 +155,33 @@ exports.processMessage = function(nick, channel, text, msg){
 			,nick			: nick
 		}
 	}
+	//	split message
 	var	 words = text.split(' ')
+		//	get user object
 		,user = stats[channel][msg.prefix]
+		//	set filename with logs
+		,today = new Date()
+		,filename, logMessage
 	
+	//	if message is command, process it
 	if ( _.indexOf( publicCommands, words[0] ) !== -1 ) {
 		cli_publicCommand(nick, channel, text, msg)
 		return
 	}
 
+	//	update stats 
 	user.words += words.length
 	user.wordsPerLine = (user.wordsPerLine+words.length)/2
 	
+	//	save message to log file
+	fs.mkdirSync('logs/'+channel)
+	
+	filename = 'logs/'+channel+'/'+today.getFullYear()+'.'+(today.getMonth()+1)+'.log'
+	logMessage = '%'+today.getDate()+'% '+today.getHours()+':'+today.getMinutes()+' |'+nick+' >>> '+text
+	fs.appendFile(filename, logMessage, function (err) {
+	  if (err) throw err;
+	  console.log('The "data to append" was appended to file!'); 
+	});
 	
 }
 
