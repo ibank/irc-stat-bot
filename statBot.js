@@ -4,7 +4,7 @@
 		,_ 			= require('underscore')._
 		,config		= { }
 		,stats		= { }
-		,publicCommands = ['!top10', '!top']
+		,publicCommands = ['!top10', '!top', '!url']
 		,fs 		= require('fs')
 
 	 	
@@ -100,6 +100,29 @@ cli_admin = function(command, args, nick){
 			//	display stats on channel
 			bot.say(channel, message.join(' '))
 			break
+		case '!url':
+			switch( text.split(' ')[1]) {
+				case 'top':
+					//	todo
+					break
+				case 'last':
+				default: 
+					var  today = new Date()
+						,filename = 'logs/'+channel+'/'+today.getFullYear()+'.urls.log'
+					//	load last urls
+					if ( !fs.existsSync(filename) ) {
+						bot.say(channel, 'Sorry, nie mam żadnych linków dla Ciebie.')
+						return
+					}
+					var  urls = fs.readFileSync(filename).toString().split('\n')
+						// last line is empty line
+						,url = urls[urls.length-2]
+						
+					bot.say(channel, 'Znalazlem '+urls.length+' URLi. Ostatni: '+url.split('>>>')[1]+ ' wrzucony przez '+ url.split('>>>')[0].split('%')[2])
+					break
+				
+			}
+			break
 		default :
 			break
 	}
@@ -161,7 +184,8 @@ exports.processMessage = function(nick, channel, text, msg){
 		,user = stats[channel][msg.prefix]
 		//	set filename with logs
 		,today = new Date()
-		,filename, logMessage
+		,filename, logMessage, url
+		,hours, minutes
 	
 	//	if message is command, process it
 	if ( _.indexOf( publicCommands, words[0] ) !== -1 ) {
@@ -169,19 +193,34 @@ exports.processMessage = function(nick, channel, text, msg){
 		return
 	}
 
-	//	update stats 
+	//	update stats for user
 	user.words += words.length
 	user.wordsPerLine = (user.wordsPerLine+words.length)/2
 	
-	//	save message to log file
-	fs.mkdirSync('logs/'+channel)
+	//	create log folder for this channel
+	if ( !fs.existsSync('logs/'+channel) ) {
+		fs.mkdirSync('logs/'+channel)
+	}
 	
+	//	save message to log file
 	filename = 'logs/'+channel+'/'+today.getFullYear()+'.'+(today.getMonth()+1)+'.log'
-	logMessage = '%'+today.getDate()+'% '+today.getHours()+':'+today.getMinutes()+' |'+nick+' >>> '+text
-	fs.appendFile(filename, logMessage, function (err) {
-	  if (err) throw err;
-	  console.log('The "data to append" was appended to file!'); 
-	});
+	logMessage = ''+today.getDate()+'% '+today.getHours()+':'+today.getMinutes()+' |'+nick+' >>> '+text+'\n'
+	fs.appendFileSync(filename, logMessage)
+	
+	//	check if message contains urls, if yes, save urls to file
+	var urlReg = /((!?)\b(https?:\/\/|www\.)(([0-9a-zA-Z_!~*'().&=+$%-]+:)?[0-9a-zA-Z_!~*'().&=+$%-]+\@)?(([0-9]{1,3}\.){3}[0-9]{1,3}|([0-9a-zA-Z_!~*'()-]+\.)*([0-9a-zA-Z][0-9a-zA-Z-]{0,61})?[0-9a-zA-Z]\.[a-zA-Z]{2,6})(:[0-9]{1,4})?((\/[0-9a-zA-Z_!~*'().;?:\@&=+$,%#-]+)*\/?))/g
+	filename = 'logs/'+channel+'/'+today.getFullYear()+'.urls.log'
+	for (var i=0, count=words.length;i<count;i++){
+		if ( urlReg.test(words[i]) ) {
+			//	todo convert logMessage to object and save as serialized
+			hours = ( today.getHours()<10 ? '0'+today.getHours() : today.getHours() ) 
+			minutes = ( today.getMinutes()<10 ? '0'+today.getMinutes() : today.getMinutes() ) 
+			logMessage = ''+today.getDate()+'%'+hours+':'+minutes+'%'+nick+'>>> '+words[i]+'\n'
+			fs.appendFileSync(filename, logMessage)
+		}
+	}
+	
+	
 	
 }
 
